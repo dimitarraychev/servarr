@@ -1,25 +1,12 @@
 # =============================================================================
-# Media Stack: qBittorrent + Prowlarr + Radarr + Sonarr + Seerr
+# Media Stack: qBittorrent + Prowlarr + Radarr + Sonarr + Seerr + 
+# Bazarr + Flaresolverr + Maintainerr
 # =============================================================================
-# Directory structure expected on host:
+# Directory structure on host:
 #   /media/
 #   ├── torrents/          # qBittorrent download location
 #   ├── movies/            # Radarr-managed movies
 #   └── series/            # Sonarr-managed series
-#
-#   /config/
-#   ├── qbittorrent/
-#   ├── prowlarr/
-#   ├── radarr/
-#   ├── sonarr/
-#   └── seerr/
-#
-# Ports:
-#   qBittorrent WebUI  → http://localhost:8080
-#   Prowlarr           → http://localhost:9696
-#   Radarr             → http://localhost:7878
-#   Sonarr             → http://localhost:8989
-#   Seerr              → http://localhost:5055
 # =============================================================================
 
 services:
@@ -31,14 +18,14 @@ services:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - TZ=${TZ:-Europe/Sofia}
-      - WEBUI_PORT=8080
-      - TORRENTING_PORT=6881
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/Sofia}
+      WEBUI_PORT: 8080
+      TORRENTING_PORT: 6881
     volumes:
       - ${CONFIG_DIR:-/config}/qbittorrent:/config
-      - /media/torrents:/media/torrents
+      - /media:/media
     ports:
       - 8080:8080
       - 6881:6881/tcp
@@ -46,6 +33,11 @@ services:
     restart: unless-stopped
     networks:
       - media_net
+    logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "3"
 
   # ---------------------------------------------------------------------------
   # Prowlarr — indexer manager
@@ -54,9 +46,9 @@ services:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - TZ=${TZ:-Europe/Sofia}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/Sofia}
     volumes:
       - ${CONFIG_DIR:-/config}/prowlarr:/config
     ports:
@@ -64,6 +56,11 @@ services:
     restart: unless-stopped
     networks:
       - media_net
+    logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "3"
 
   # ---------------------------------------------------------------------------
   # Radarr — movie manager
@@ -72,9 +69,9 @@ services:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - TZ=${TZ:-Europe/Sofia}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/Sofia}
     volumes:
       - ${CONFIG_DIR:-/config}/radarr:/config
       - /media:/media
@@ -86,6 +83,11 @@ services:
     depends_on:
       - qbittorrent
       - prowlarr
+    logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "3"
 
   # ---------------------------------------------------------------------------
   # Sonarr — TV series manager
@@ -94,9 +96,9 @@ services:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
     environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - TZ=${TZ:-Europe/Sofia}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/Sofia}
     volumes:
       - ${CONFIG_DIR:-/config}/sonarr:/config
       - /media:/media
@@ -108,6 +110,11 @@ services:
     depends_on:
       - qbittorrent
       - prowlarr
+    logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "3"
 
   # ---------------------------------------------------------------------------
   # Seerr — unified media request manager (Plex + Jellyfin + Emby)
@@ -118,9 +125,9 @@ services:
     container_name: seerr
     init: true
     environment:
-      - LOG_LEVEL=info
-      - TZ=${TZ:-Europe/Sofia}
-      - PORT=5055
+      LOG_LEVEL: info
+      TZ: ${TZ:-Europe/Sofia}
+      PORT: 5055
     volumes:
       - ${CONFIG_DIR:-/config}/seerr:/app/config
     ports:
@@ -137,6 +144,11 @@ services:
     depends_on:
       - radarr
       - sonarr
+    logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "3"
 
   # ---------------------------------------------------------------------------
   # Bazarr — subtitle manager for Radarr & Sonarr
@@ -145,9 +157,9 @@ services:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
     environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - TZ=${TZ:-Europe/Sofia}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/Sofia}
     volumes:
       - ${CONFIG_DIR:-/config}/bazarr:/config
       - /media:/media
@@ -159,7 +171,12 @@ services:
     depends_on:
       - radarr
       - sonarr
-      
+    logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "3"
+
   # ---------------------------------------------------------------------------
   # Flaresolverr — proxy for Prowlarr indexers
   # ---------------------------------------------------------------------------
@@ -167,26 +184,31 @@ services:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
     environment:
-      - LOG_LEVEL=info
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - TZ=${TZ:-Europe/Sofia}
+      LOG_LEVEL: info
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/Sofia}
     ports:
       - "8191:8191"
     networks:
       - media_net
     restart: unless-stopped
+    logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "3"
 
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   # Maintainerr — rules-based media cleanup (deletes watched media)
   # ---------------------------------------------------------------------------
   maintainerr:
     image: jorenn92/maintainerr:latest
     container_name: maintainerr
     environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - TZ=${TZ:-Europe/Sofia}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/Sofia}
     volumes:
       - ${CONFIG_DIR:-/config}/maintainerr:/opt/data
     ports:
@@ -197,6 +219,11 @@ services:
     depends_on:
       - radarr
       - sonarr
+    logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "3"
 
 # =============================================================================
 # Networks
