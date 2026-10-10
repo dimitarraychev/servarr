@@ -122,6 +122,7 @@ services:
   # ---------------------------------------------------------------------------
   seerr:
     image: ghcr.io/seerr-team/seerr:latest
+    user: "1000:100"
     container_name: seerr
     init: true
     environment:
@@ -204,10 +205,9 @@ services:
   # ---------------------------------------------------------------------------
   maintainerr:
     image: ghcr.io/maintainerr/maintainerr:latest
+    user: "1000:100"
     container_name: maintainerr
     environment:
-      PUID: ${PUID:-1000}
-      PGID: ${PGID:-100}
       TZ: ${TZ:-Europe/Sofia}
     volumes:
       - ${CONFIG_DIR:-/config}/maintainerr:/opt/data
