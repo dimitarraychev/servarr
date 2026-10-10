@@ -203,7 +203,7 @@ services:
   # Maintainerr — rules-based media cleanup (deletes watched media)
   # ---------------------------------------------------------------------------
   maintainerr:
-    image: jorenn92/maintainerr:latest
+    image: ghcr.io/maintainerr/maintainerr:latest
     container_name: maintainerr
     environment:
       PUID: ${PUID:-1000}
